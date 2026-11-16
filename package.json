@@ -1,0 +1,11 @@
+{
+  "name": "code-formatter",
+  "version": "1.0.0",
+  "description": "my code formatter — formatter, beautifier and validator for 46 languages",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

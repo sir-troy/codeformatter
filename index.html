@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>my code formatter</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --border: #e2e5ea; --text: #1d2430; --muted: #6b7380;
+    --accent: #3b6ef5; --ok: #1f9d55; --warn: #c27c0e; --err: #d64545;
+    --k: #8a3ffc; --s: #1f8a4c; --n: #c25b00; --b: #0b6bcb; --nl: #8a8f98;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #12151b; --panel: #1a1e26; --border: #2a303b; --text: #e3e7ee; --muted: #8b93a1;
+    --accent: #6c93ff; --ok: #3ccf7f; --warn: #f0b24a; --err: #ff6b6b;
+    --k: #c4a1ff; --s: #7fd8a0; --n: #ffb070; --b: #6cb6ff; --nl: #8b93a1;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--panel);
+  }
+  h1 { font-size: 16px; margin: 0 8px 0 0; font-weight: 650; letter-spacing: -0.01em; }
+  h1 { font-weight: 600; }
+  h1 .brand { color: var(--accent); font-weight: 800; letter-spacing: -0.02em; }
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  button, select {
+    font: inherit; font-size: 13px; color: var(--text); background: var(--panel);
+    border: 1px solid var(--border); border-radius: 7px; padding: 6px 11px; cursor: pointer;
+  }
+  button:hover, select:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { filter: brightness(1.08); }
+  select.lang { font-weight: 600; padding-right: 8px; border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .45; cursor: not-allowed; border-color: var(--border) !important; }
+  .in-lang { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent); padding: 2px 8px; border-radius: 999px; font-size: 11.5px; }
+  .in-lang:empty { display: none; }
+  pre .hljs-keyword, pre .hljs-selector-tag, pre .hljs-name, pre .hljs-section, pre .hljs-doctag, pre .hljs-type { color: var(--k); }
+  pre .hljs-string, pre .hljs-regexp, pre .hljs-selector-attr, pre .hljs-addition, pre .hljs-code { color: var(--s); }
+  pre .hljs-number, pre .hljs-literal, pre .hljs-variable, pre .hljs-template-variable, pre .hljs-symbol, pre .hljs-bullet { color: var(--n); }
+  pre .hljs-attr, pre .hljs-attribute, pre .hljs-property, pre .hljs-selector-class, pre .hljs-selector-id,
+  pre .hljs-selector-pseudo, pre .hljs-title, pre .hljs-built_in, pre .hljs-link, pre .hljs-params { color: var(--b); }
+  pre .hljs-comment, pre .hljs-quote, pre .hljs-meta, pre .hljs-deletion { color: var(--nl); font-style: italic; }
+  pre .hljs-meta .hljs-string { color: var(--s); }
+  pre .hljs-emphasis { font-style: italic; } pre .hljs-strong { font-weight: 700; }
+  label.chk { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
+  main {
+    flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr) 200px; gap: 14px; padding: 14px 18px;
+  }
+  .pane {
+    display: flex; flex-direction: column; min-height: 0; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  }
+  .pane-head {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border);
+    font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .pane-head .spacer { flex: 1; }
+  .pane-head button { padding: 3px 9px; font-size: 12px; text-transform: none; letter-spacing: 0; font-weight: 500; }
+  textarea, pre {
+    flex: 1; margin: 0; padding: 12px 14px; border: 0; outline: none; resize: none;
+    background: transparent; color: var(--text); font: 13px/1.55 var(--mono);
+    overflow: auto; white-space: pre; tab-size: 4;
+  }
+  textarea.drag { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  pre .k { color: var(--k); } pre .s { color: var(--s); } pre .n { color: var(--n); }
+  pre .b { color: var(--b); } pre .nl { color: var(--nl); font-style: italic; }
+  pre .placeholder { color: var(--muted); font-family: system-ui, sans-serif; white-space: normal; }
+  .badge { font-weight: 650; white-space: nowrap; }
+  .ok .badge, .badge.ok { color: var(--ok); } .warn .badge, .badge.warn { color: var(--warn); }
+  .err .badge, .badge.err { color: var(--err); } .info .badge, .badge.info { color: var(--accent); }
+  .detail { color: var(--muted); }
+  .logs { grid-column: 1 / -1; }
+  .logs .pane-head .current { text-transform: none; letter-spacing: 0; font-size: 12.5px; display: inline-flex; gap: 8px; align-items: center; }
+  .logs .pane-head .stats { font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .log-list { flex: 1; overflow: auto; padding: 4px 0; font-size: 13px; }
+  .log-empty { padding: 14px; color: var(--muted); }
+  .log {
+    display: grid; grid-template-columns: 18px 64px 1fr; gap: 8px; align-items: start;
+    padding: 6px 12px; border-left: 3px solid transparent;
+  }
+  .log + .log { border-top: 1px solid var(--border); }
+  .log.ok { border-left-color: var(--ok); } .log.warn { border-left-color: var(--warn); }
+  .log.err { border-left-color: var(--err); } .log.info { border-left-color: var(--accent); }
+  .log .ico { font-weight: 700; text-align: center; }
+  .log.ok .ico { color: var(--ok); } .log.warn .ico { color: var(--warn); }
+  .log.err .ico { color: var(--err); } .log.info .ico { color: var(--accent); }
+  .log .time { color: var(--muted); font: 12px/1.6 var(--mono); }
+  .log .msg { min-width: 0; }
+  .log .msg .title { font-weight: 600; }
+  .log.new { animation: flash .8s ease; }
+  @keyframes flash { from { background: color-mix(in srgb, var(--accent) 12%, transparent); } to { background: transparent; } }
+  footer {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 0 18px 10px; font-size: 12px; color: var(--muted);
+  }
+  .foot-actions { display: flex; gap: 8px; }
+  .foot-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font-size: 12.5px; }
+  .foot-btn svg { width: 15px; height: 15px; }
+  .like .heart { fill: none; stroke: currentColor; stroke-width: 1.8; transition: transform .2s ease; }
+  .like[aria-pressed="true"] { color: #e5484d; border-color: color-mix(in srgb, #e5484d 50%, var(--border));
+    background: color-mix(in srgb, #e5484d 10%, var(--panel)); }
+  .like[aria-pressed="true"] .heart { fill: #e5484d; stroke: #e5484d; }
+  .like.pop .heart { animation: pop .35s ease; }
+  @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+  .modal-back { position: fixed; inset: 0; background: rgba(8, 10, 14, .55); display: grid; place-items: center; z-index: 50; padding: 16px; }
+  .modal-back[hidden] { display: none; }
+  .modal { width: min(440px, 100%); background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.35); display: flex; flex-direction: column; }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 6px; }
+  .modal-head h2 { margin: 0; font-size: 16px; }
+  .modal-head .x { border: 0; background: transparent; color: var(--muted); font-size: 15px; padding: 4px 6px; }
+  .modal-body { padding: 8px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .modal-body label { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--muted); position: relative; }
+  .modal-body input, .modal-body textarea {
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; outline: none; resize: vertical; white-space: normal;
+  }
+  .modal-body input:focus, .modal-body textarea:focus { border-color: var(--accent); }
+  .modal-body .invalid { border-color: var(--err) !important; }
+  .modal-body .count { position: absolute; right: 0; top: 0; font-weight: 500; font-size: 11.5px; }
+  .fb-error { color: var(--err); font-size: 13px; min-height: 0; }
+  .fb-error:empty { display: none; }
+  .fb-done { text-align: center; padding: 18px 6px 8px; }
+  .fb-done .big { font-size: 34px; color: var(--ok); }
+  .modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 16px 16px; }
+  .snippet {
+    margin-top: 6px; font: 12px/1.5 var(--mono); background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 10px; white-space: pre; overflow-x: auto; color: var(--text);
+  }
+  .snippet .caret { color: var(--err); font-weight: 700; }
+  .stats { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .toast {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(20px); opacity: 0;
+    background: var(--text); color: var(--bg); padding: 7px 14px; border-radius: 8px; font-size: 13px;
+    transition: all .18s ease; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .switch { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; margin-right: 6px; }
+  .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .switch .track {
+    position: relative; width: 52px; height: 28px; border-radius: 999px;
+    background: #dfe3ea; transition: background .2s ease;
+  }
+  .switch .thumb {
+    position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .22s ease;
+    display: grid; place-items: center;
+  }
+  .switch .ic { width: 14px; height: 14px; grid-area: 1 / 1; transition: opacity .2s ease, transform .3s ease; }
+  .switch .sun { color: #f2a600; }
+  .switch .moon { color: #4a5bd8; opacity: 0; transform: rotate(-60deg) scale(.6); }
+  .switch input:checked + .track { background: var(--accent); }
+  .switch input:checked + .track .thumb { transform: translateX(24px); background: #1a1e26; }
+  .switch input:checked + .track .sun { opacity: 0; transform: rotate(60deg) scale(.6); }
+  .switch input:checked + .track .moon { opacity: 1; transform: none; color: #ffd76a; }
+  .switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (max-width: 780px) {
+    main { grid-template-columns: 1fr; grid-template-rows: 320px 320px 220px; } footer { flex-wrap: wrap; } body { height: auto; } html, body { height: auto; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="controls">
+    <select id="lang" class="lang" title="Language / format" aria-label="Language"></select>
+  </div>
+  <h1 id="title"><span class="brand">my</span> code formatter</h1>
+  <div class="controls">
+    <button class="primary" id="btnFormat">Format</button>
+    <button id="btnMinify">Minify</button>
+    <select id="indent" title="Indentation">
+      <option value="2">2 spaces</option>
+      <option value="4">4 spaces</option>
+      <option value="tab">Tabs</option>
+    </select>
+    <label class="chk" id="sortWrap"><input type="checkbox" id="sortKeys"> Sort keys</label>
+    <label class="chk" id="fixWrap"><input type="checkbox" id="autoFix" checked> Auto-fix errors</label>
+  </div>
+  <div class="spacer"></div>
+  <div class="controls">
+    <label class="switch" title="Dark mode">
+      <input type="checkbox" id="themeToggle" role="switch" aria-label="Dark mode">
+      <span class="track"><span class="thumb">
+        <svg class="ic sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
+        <svg class="ic moon" viewBox="0 0 24 24"><path fill="currentColor" d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z"/></svg>
+      </span></span>
+    </label>
+    <button id="btnSample">Sample</button>
+    <label><button id="btnOpen" type="button">Open file</button><input type="file" id="file" accept=".json,.xml,.svg,.html,.htm,.css,.scss,.less,.js,.mjs,.cjs,.jsx,.ts,.tsx,.yml,.yaml,.md,.graphql,.gql,.sql,.txt,text/*,application/json,application/xml" hidden></label>
+  </div>
+</header>
+
+<main>
+  <section class="pane">
+    <div class="pane-head">Input <span class="in-lang" id="inLang"></span><div class="spacer"></div><button id="btnClear">Clear</button></div>
+    <textarea id="input" spellcheck="false" placeholder="Paste your code here… (or drop a file)"></textarea>
+  </section>
+  <section class="pane">
+    <div class="pane-head">Output <div class="spacer"></div><button id="btnUseOutput" title="Move output to the input side">← Use as input</button><button id="btnCopy">Copy</button></div>
+    <pre id="output"><span class="placeholder">Formatted JSON will appear here.</span></pre>
+  </section>
+  <section class="pane logs">
+    <div class="pane-head">Logs
+      <span class="current" id="current"></span>
+      <div class="spacer"></div>
+      <span class="stats" id="stats"></span>
+      <button id="btnClearLogs">Clear logs</button>
+    </div>
+    <div class="log-list" id="logList"><div class="log-empty">No logs yet — pick a language (or Auto-detect) and paste on the left.</div></div>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-actions">
+    <button id="btnLike" class="foot-btn like" aria-pressed="false" title="Like this tool">
+      <svg viewBox="0 0 24 24" class="heart"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.2 3 4.5 6.6 4.5c2.1 0 3.5 1.1 4.4 2.5.9-1.4 2.3-2.5 4.4-2.5 3.6 0 5.7 3.7 4.2 7.2C19.5 16.4 12 21 12 21z"/></svg>
+      <span class="like-text">Like</span>
+    </button>
+    <button id="btnFeedback" class="foot-btn" title="Send feedback">
+      <svg viewBox="0 0 24 24" class="fb-ic"><path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-4.3 3.4A.5.5 0 0 1 4 20V5a1 1 0 0 1 0-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h8M8 12.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Feedback
+    </button>
+  </div>
+  <span class="copy">© <span id="year">2026</span> · Sir Troy. All rights reserved.</span>
+</footer>
+
+<div class="modal-back" id="fbModal" hidden>
+  <form class="modal" id="fbForm" novalidate>
+    <div class="modal-head">
+      <h2>Send feedback</h2>
+      <button type="button" class="x" id="fbClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="fbBody">
+      <label>Name <input id="fbName" name="name" maxlength="100" autocomplete="name" required></label>
+      <label>Email <input id="fbEmail" name="email" type="email" maxlength="200" autocomplete="email" required></label>
+      <label>Comment <textarea id="fbComment" name="comment" maxlength="5000" rows="5" required placeholder="What do you like? What should be improved?"></textarea>
+        <span class="count" id="fbCount">0 / 5000</span></label>
+      <div class="fb-error" id="fbError" role="alert"></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" id="fbCancel">Cancel</button>
+      <button type="submit" class="primary" id="fbSend">Send</button>
+    </div>
+  </form>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  // ---------- Lenient / strict parser ----------
+  // In strict mode any deviation from JSON throws. In lenient mode common mistakes are repaired
+  // and each kind of repair is recorded in `fixes`.
+  class ParseError extends Error { constructor(msg, pos) { super(msg); this.pos = pos; } }
+
+  function parse(text, strict) {
+    let i = 0;
+    const n = text.length;
+    const fixes = new Set();
+    const STRICT_MSG = {
+      'Removed comments': 'Comments are not allowed in JSON',
+      'Removed invisible characters': 'Invisible/non-breaking space character',
+      'Closed unclosed brackets': 'Unexpected end of input — missing closing bracket',
+      'Fixed mismatched brackets': 'Mismatched closing bracket',
+      'Removed extra commas': 'Unexpected extra comma',
+      'Removed trailing commas': 'Trailing comma is not allowed',
+      'Added missing commas': "Missing comma between items",
+      'Quoted unquoted keys': 'Property names must be in double quotes',
+      "Replaced '=' with ':'": "Expected ':' after property name",
+      'Converted single quotes to double quotes': 'Strings must use double quotes, not single quotes',
+      'Converted backtick strings to double quotes': 'Strings must use double quotes, not backticks',
+      'Replaced curly quotes': 'Curly “smart” quotes are not valid — use straight double quotes',
+      'Fixed invalid escape sequences': 'Invalid escape sequence in string',
+      'Converted non-JSON literals (True/None/undefined…)': 'Invalid literal — use true, false or null',
+    };
+    let depth = 0;
+    const fix = (what, pos) => { if (strict) throw new ParseError(STRICT_MSG[what] || what, pos ?? i); fixes.add(what); };
+    const fail = (msg, pos) => { throw new ParseError(msg, pos ?? i); };
+    const desc = (p) => p >= n ? 'end of input' : `'${text[p]}'`;
+
+    function ws() {
+      while (i < n) {
+        const c = text[i];
+        if (c === ' ' || c === '\t' || c === '\n' || c === '\r') { i++; continue; }
+        if (c === '﻿' || c === ' ') { if (i !== 0 || c !== '﻿') fix('Removed invisible characters'); i++; continue; }
+        if (c === '/' && text[i + 1] === '/') { fix('Removed comments'); while (i < n && text[i] !== '\n') i++; continue; }
+        if (c === '/' && text[i + 1] === '*') {
+          fix('Removed comments'); const end = text.indexOf('*/', i + 2);
+          if (end < 0) fail('Unterminated comment'); i = end + 2; continue;
+        }
+        if (c === '#') { fix('Removed comments'); while (i < n && text[i] !== '\n') i++; continue; }
+        break;
+      }
+    }
+
+    function value() {
+      ws();
+      if (i >= n) fail('Unexpected end of input — expected a value');
+      const c = text[i];
+      if (c === '{') { const o = object(); depth--; return o; }
+      if (c === '[') { const a = array(); depth--; return a; }
+      if (c === '"' || c === "'" || c === '`' || c === '“' || c === '‘') return string();
+      if (c === '-' || c === '+' || c === '.' || (c >= '0' && c <= '9')) return number();
+      return word();
+    }
+
+    function object() {
+      i++; depth++;
+      const obj = {};
+      let first = true;
+      while (true) {
+        ws();
+        if (i >= n) { fix('Closed unclosed brackets'); return obj; }
+        if (text[i] === '}') { i++; return obj; }
+        if (text[i] === ']') { fix('Fixed mismatched brackets'); i++; return obj; }
+        if (!first) {
+          if (text[i] === ',') {
+            i++; ws();
+            while (text[i] === ',') { fix('Removed extra commas'); i++; ws(); }
+            if (text[i] === '}') { fix('Removed trailing commas'); i++; return obj; }
+            if (i >= n) { fix('Closed unclosed brackets'); return obj; }
+          } else {
+            fix('Added missing commas');
+          }
+        } else if (text[i] === ',') {
+          fix('Removed extra commas'); i++; continue;
+        }
+        first = false;
+        ws();
+        const keyPos = i;
+        let key;
+        const kc = text[i];
+        if (kc === '"') key = string();
+        else if (kc === "'" || kc === '`' || kc === '“' || kc === '‘') key = string();
+        else {
+          const m = /^[A-Za-z_$À-￿][\w$\-À-￿]*/.exec(text.slice(i));
+          if (!m) {
+            if (/[0-9]/.test(kc || '')) { const m2 = /^[0-9.\-]+/.exec(text.slice(i)); fix('Quoted unquoted keys'); i += m2[0].length; key = m2[0]; }
+            else fail(`Expected a property name or '}' but found ${desc(i)}`, keyPos);
+          } else { fix('Quoted unquoted keys', keyPos); i += m[0].length; key = m[0]; }
+        }
+        ws();
+        if (text[i] === ':') i++;
+        else if (text[i] === '=') { fix("Replaced '=' with ':'"); i++; }
+        else fail(`Expected ':' after property name but found ${desc(i)}`);
+        obj[key] = value();
+      }
+    }
+
+    function array() {
+      i++; depth++;
+      const arr = [];
+      let first = true;
+      while (true) {
+        ws();
+        if (i >= n) { fix('Closed unclosed brackets'); return arr; }
+        if (text[i] === ']') { i++; return arr; }
+        if (text[i] === '}') { fix('Fixed mismatched brackets'); i++; return arr; }
+        if (!first) {
+          if (text[i] === ',') {
+            i++; ws();
+            while (text[i] === ',') { fix('Removed extra commas'); i++; ws(); }
+            if (text[i] === ']') { fix('Removed trailing commas'); i++; return arr; }
+            if (i >= n) { fix('Closed unclosed brackets'); return arr; }
+          } else {
+            fix('Added missing commas');
+          }
+        } else if (text[i] === ',') {
+          fix('Removed extra commas'); i++; continue;
+        }
+        first = false;
+        arr.push(value());
+      }
+    }
+
+    function string() {
+      const startPos = i;
+      let q = text[i];
+      let close = q;
+      if (q === "'") fix('Converted single quotes to double quotes');
+      else if (q === '`') fix('Converted backtick strings to double quotes');
+      else if (q === '“') { fix('Replaced curly quotes'); close = '”'; }
+      else if (q === '‘') { fix('Replaced curly quotes'); close = '’'; }
+      i++;
+      let out = '';
+      while (true) {
+        if (i >= n) { if (strict) fail('Unterminated string', startPos); fixes.add('Closed unterminated strings'); return out; }
+        const c = text[i];
+        if (c === close) { i++; return out; }
+        if (c === '\\') {
+          const e = text[i + 1];
+          const map = { '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t' };
+          if (e in map) { out += map[e]; i += 2; continue; }
+          if (e === 'u' && /^[0-9a-fA-F]{4}$/.test(text.substr(i + 2, 4))) {
+            out += String.fromCharCode(parseInt(text.substr(i + 2, 4), 16)); i += 6; continue;
+          }
+          if (e === "'" || e === '`') { if (strict) fail('Invalid escape sequence'); out += e; i += 2; continue; }
+          fix('Fixed invalid escape sequences'); out += '\\'; i++; continue;
+        }
+        if (c === '\n' || c === '\r') {
+          if (strict) fail('Line break inside a string — use \\n instead');
+          fixes.add('Escaped line breaks inside strings'); out += c; i++; continue;
+        }
+        if (c < ' ' && c !== '\t') { if (strict) fail('Control character inside a string'); out += c; i++; continue; }
+        if (c === '\t' && strict) fail('Tab character inside a string — use \\t instead');
+        out += c; i++;
+      }
+    }
+
+    function number() {
+      const start = i;
+      const m = /^[+-]?(0[xX][0-9a-fA-F]+|(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?|Infinity|NaN)/.exec(text.slice(i));
+      if (!m) fail(`Unexpected ${desc(i)} — expected a value`);
+      const s = m[0];
+      const strictOk = /^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/.test(s);
+      if (!strictOk) {
+        if (strict) fail(`Invalid number '${s}'`, start);
+        if (/Infinity|NaN/.test(s)) { fixes.add('Replaced NaN/Infinity with null'); i += s.length; return null; }
+        fixes.add('Fixed number formats');
+      }
+      i += s.length;
+      return Number(s.replace(/^\+/, ''));
+    }
+
+    function word() {
+      const start = i;
+      const m = /^[A-Za-z_$][\w$]*/.exec(text.slice(i));
+      if (!m) fail(`Unexpected ${desc(i)} — expected a value`);
+      const w = m[0];
+      i += w.length;
+      if (w === 'true') return true;
+      if (w === 'false') return false;
+      if (w === 'null') return null;
+      const alt = { True: true, TRUE: true, False: false, FALSE: false, None: null, NULL: null, Null: null, undefined: null, NaN: null, Infinity: null };
+      if (w in alt) { fix('Converted non-JSON literals (True/None/undefined…)', start); return alt[w]; }
+      if (strict || depth === 0) fail(`Unexpected '${w}' — strings must be in double quotes`, start);
+      // Bare word: treat as an unquoted string value (read until delimiter)
+      let j = start;
+      while (j < n && !/[,\]\}\n\r]/.test(text[j])) j++;
+      i = j;
+      fixes.add('Quoted unquoted string values');
+      return text.slice(start, j).trim();
+    }
+
+    ws();
+    if (i >= n) fail('Input is empty');
+    const result = value();
+    ws();
+    while (i < n && !strict && (text[i] === ';' || text[i] === ',')) { fixes.add('Removed trailing characters'); i++; ws(); }
+    if (i < n) {
+      if (strict) fail(`Unexpected ${desc(i)} after the end of the JSON value`);
+      // Multiple top-level values → wrap in array
+      const items = [result];
+      while (i < n) {
+        if (text[i] === ',') { i++; ws(); continue; }
+        items.push(value()); ws();
+      }
+      fixes.add('Wrapped multiple top-level values in an array');
+      return { value: items, fixes: [...fixes] };
+    }
+    return { value: result, fixes: [...fixes] };
+  }
+
+  // ---------- Helpers ----------
+  const $ = (id) => document.getElementById(id);
+  const input = $('input'), output = $('output');
+  let lastOutput = '';
+  let mode = 'format';
+
+  function sortDeep(v) {
+    if (Array.isArray(v)) return v.map(sortDeep);
+    if (v && typeof v === 'object') {
+      const o = {};
+      for (const k of Object.keys(v).sort((a, b) => a.localeCompare(b))) o[k] = sortDeep(v[k]);
+      return o;
+    }
+    return v;
+  }
+
+  function lineCol(text, pos) {
+    let line = 1, col = 1;
+    for (let k = 0; k < pos && k < text.length; k++) { if (text[k] === '\n') { line++; col = 1; } else col++; }
+    return { line, col };
+  }
+
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  function highlight(json) {
+    if (json.length > 2_000_000) return esc(json); // keep huge inputs fast
+    return esc(json).replace(
+      /("(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false)\b|\bnull\b|-?\d+(\.\d+)?([eE][+-]?\d+)?)/g,
+      (m) => {
+        let cls = 'n';
+        if (m[0] === '"') cls = /:\s*$/.test(m) ? 'k' : 's';
+        else if (m === 'true' || m === 'false') cls = 'b';
+        else if (m === 'null') cls = 'nl';
+        if (cls === 'k') { const idx = m.lastIndexOf(':'); return `<span class="k">${m.slice(0, idx)}</span>${m.slice(idx)}`; }
+        return `<span class="${cls}">${m}</span>`;
+      });
+  }
+
+  function fmtSize(b) { return b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(2) + ' MB'; }
+
+  function countNodes(v) {
+    let c = 0; const stack = [v];
+    while (stack.length) { const x = stack.pop(); c++; if (x && typeof x === 'object') for (const k in x) stack.push(x[k]); }
+    return c;
+  }
+
+  const logList = $('logList'), currentEl = $('current'), statsEl = $('stats');
+  const ICON = { ok: '✓', warn: '⚠', err: '✕', info: 'i' };
+  const LABEL = { ok: 'Valid JSON', warn: 'Fixed', err: 'Invalid JSON', info: 'Info' };
+  let lastLogKey = '', logTimer = null, pending = null;
+
+  function addLog(kind, title, detailHtml = '') {
+    const empty = logList.querySelector('.log-empty'); if (empty) empty.remove();
+    const now = new Date();
+    const t = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    const el = document.createElement('div');
+    el.className = `log ${kind} new`;
+    el.innerHTML = `<span class="ico">${ICON[kind]}</span><span class="time">${t}</span>` +
+      `<div class="msg"><div class="title">${esc(title)}</div>${detailHtml}</div>`;
+    logList.prepend(el);
+    setTimeout(() => el.classList.remove('new'), 900);
+    while (logList.children.length > 200) logList.lastChild.remove();
+  }
+
+  // Update the "current" indicator right away; write a log entry once typing settles.
+  function report(kind, title, detailHtml, stats, key, immediate, badge) {
+    currentEl.innerHTML = kind ? `<span class="badge ${kind}">${ICON[kind]} ${esc(badge || LABEL[kind])}</span>` : '';
+    statsEl.innerHTML = stats || '';
+    if (!kind) { lastLogKey = ''; clearTimeout(logTimer); pending = null; return; }
+    pending = { kind, title, detailHtml, key };
+    clearTimeout(logTimer);
+    const flush = () => {
+      if (!pending || pending.key === lastLogKey) return;
+      lastLogKey = pending.key; addLog(pending.kind, pending.title, pending.detailHtml); pending = null;
+    };
+    if (immediate) flush(); else logTimer = setTimeout(flush, 700);
+  }
+
+  function snippetHtml(text, pos) {
+    const { line, col } = lineCol(text, pos);
+    const lines = text.split('\n');
+    let src = lines[line - 1] ?? '';
+    let c = col - 1;
+    // trim long lines around the error
+    let pre = '';
+    if (src.length > 90) {
+      const from = Math.max(0, c - 45);
+      pre = from > 0 ? '…' : '';
+      src = pre + src.slice(from, from + 90) + (from + 90 < src.length ? '…' : '');
+      c = c - from + pre.length;
+    }
+    const gutter = String(line).padStart(4) + ' │ ';
+    return `<div class="snippet">${esc(gutter + src.replace(/\t/g, ' '))}\n<span class="caret">${' '.repeat(gutter.length + c)}^</span></div>`;
+  }
+
+  // ---------- Languages ----------
+  const PRETTIER = 'https://cdn.jsdelivr.net/npm/prettier@3.3.3/';
+  const PHP_PLUGIN = 'https://cdn.jsdelivr.net/npm/@prettier/plugin-php@0.26.0/standalone.js';
+  const SQLF = 'https://cdn.jsdelivr.net/npm/sql-formatter@15.4.0/dist/sql-formatter.min.js';
+  const HLJS = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/';
+  const P = (parser, plugins, hl, extra) => ({ kind: 'prettier', parser, plugins, hl, ...extra });
+  const W = (mod, fmt, hl, extra) => ({ kind: 'wasm', mod, fmt, hl, validates: true, ...extra });
+  const clangStyle = (base, o) =>
+    `{BasedOnStyle: ${base}, IndentWidth: ${o.width}, TabWidth: ${o.width}, UseTab: ${o.tabs ? 'Always' : 'Never'}, ColumnLimit: 100, AccessModifierOffset: -${Math.max(1, Math.floor(o.width / 2))}}`;
+  const C = (file, base, hl) => W('clang-format/clang-format-web.js', (m, s, o) => m.format(s, file, clangStyle(base, o)), hl,
+    { validates: false, note: 'clang-format reformats the code but does not fully check syntax.' });
+  const SQLD = (dialect, label) => ({ label, group: 'SQL', kind: 'sql', dialect, hl: 'sql' });
+
+  const LANGS = {
+    auto:       { label: 'Auto-detect', group: '' },
+    // Data
+    json:       { label: 'JSON', group: 'Data', kind: 'json', minify: true },
+    json5:      { label: 'JSON5', group: 'Data', ...P('json5', ['babel', 'estree'], 'javascript') },
+    yaml:       { label: 'YAML', group: 'Data', ...P('yaml', ['yaml'], 'yaml') },
+    toml:       { label: 'TOML', group: 'Data', kind: 'toml', hl: 'ini', validates: true },
+    xml:        { label: 'XML', group: 'Data', kind: 'xml', hl: 'xml', minify: true },
+    // Web
+    html:       { label: 'HTML', group: 'Web', ...P('html', ['html', 'babel', 'estree', 'postcss'], 'xml') },
+    vue:        { label: 'Vue', group: 'Web', ...P('vue', ['html', 'babel', 'estree', 'postcss', 'typescript'], 'xml') },
+    angular:    { label: 'Angular template', group: 'Web', ...P('angular', ['html', 'angular', 'babel', 'estree', 'postcss'], 'xml') },
+    handlebars: { label: 'Handlebars', group: 'Web', ...P('glimmer', ['glimmer'], 'handlebars') },
+    css:        { label: 'CSS', group: 'Web', ...P('css', ['postcss'], 'css', { minify: true }) },
+    scss:       { label: 'SCSS', group: 'Web', ...P('scss', ['postcss'], 'scss') },
+    less:       { label: 'LESS', group: 'Web', ...P('less', ['postcss'], 'less') },
+    javascript: { label: 'JavaScript / JSX', group: 'Web', ...P('babel', ['babel', 'estree'], 'javascript') },
+    typescript: { label: 'TypeScript / TSX', group: 'Web', ...P('typescript', ['typescript', 'estree'], 'typescript') },
+    flow:       { label: 'Flow', group: 'Web', ...P('flow', ['flow', 'estree'], 'javascript') },
+    graphql:    { label: 'GraphQL', group: 'Web', ...P('graphql', ['graphql'], 'graphql') },
+    markdown:   { label: 'Markdown', group: 'Web', ...P('markdown', ['markdown'], 'markdown') },
+    mdx:        { label: 'MDX', group: 'Web', ...P('mdx', ['markdown', 'babel', 'estree'], 'markdown') },
+    // Programming
+    python:     { label: 'Python', group: 'Programming', ...W('ruff_fmt/ruff_fmt_web.js',
+                  (m, s, o) => m.format(s, null, { indent_style: o.tabs ? 'tab' : 'space', indent_width: o.width, line_width: 100 }), 'python') },
+    go:         { label: 'Go', group: 'Programming', ...W('gofmt/gofmt_web.js', (m, s) => m.format(s), 'go', { note: 'gofmt always uses tabs.' }) },
+    java:       { label: 'Java', group: 'Programming', ...C('Main.java', 'Google', 'java') },
+    c:          { label: 'C', group: 'Programming', ...C('main.c', 'Google', 'c') },
+    cpp:        { label: 'C++', group: 'Programming', ...C('main.cpp', 'Google', 'cpp') },
+    csharp:     { label: 'C#', group: 'Programming', ...C('Program.cs', 'Microsoft', 'csharp') },
+    objectivec: { label: 'Objective-C', group: 'Programming', ...C('main.m', 'Google', 'objectivec') },
+    php:        { label: 'PHP', group: 'Programming', kind: 'prettier', parser: 'php', plugins: [], ext: [PHP_PLUGIN, 'php'], hl: 'php', popts: { phpVersion: '8.4' } },
+    dart:       { label: 'Dart', group: 'Programming', ...W('dart_fmt/dart_fmt_web.js', (m, s) => m.format(s, 'main.dart', { line_width: 100 }), 'dart', { note: 'dart format always uses 2-space indents.' }) },
+    lua:        { label: 'Lua', group: 'Programming', ...W('lua_fmt/lua_fmt_web.js',
+                  (m, s, o) => m.format(s, { indent_style: o.tabs ? 'tab' : 'space', indent_width: o.width, line_width: 100 }), 'lua') },
+    shell:      { label: 'Shell / Bash', group: 'Programming', ...W('shfmt/shfmt_web.js', (m, s, o) => m.format(s, 'script.sh', { indent: o.tabs ? 0 : o.width }), 'bash') },
+    zig:        { label: 'Zig', group: 'Programming', ...W('zig_fmt/zig_fmt_web.js', (m, s) => m.format(s), '', { note: 'zig fmt always uses 4-space indents.' }) },
+    protobuf:   { label: 'Protocol Buffers', group: 'Programming', ...C('schema.proto', 'Google', 'protobuf') },
+    // SQL
+    sql:        SQLD('sql', 'SQL (standard)'),
+    mysql:      SQLD('mysql', 'MySQL'),
+    mariadb:    SQLD('mariadb', 'MariaDB'),
+    postgresql: SQLD('postgresql', 'PostgreSQL'),
+    tsql:       SQLD('tsql', 'SQL Server (T-SQL)'),
+    plsql:      SQLD('plsql', 'Oracle PL/SQL'),
+    sqlite:     SQLD('sqlite', 'SQLite'),
+    bigquery:   SQLD('bigquery', 'BigQuery'),
+    snowflake:  SQLD('snowflake', 'Snowflake'),
+    redshift:   SQLD('redshift', 'Redshift'),
+    spark:      SQLD('spark', 'Spark SQL'),
+    trino:      SQLD('trino', 'Trino / Presto'),
+    hive:       SQLD('hive', 'Hive'),
+    db2:        SQLD('db2', 'IBM Db2'),
+  };
+  const EXT = {
+    json: 'json', jsonc: 'json', json5: 'json5', yml: 'yaml', yaml: 'yaml', toml: 'toml',
+    xml: 'xml', svg: 'xml', xsd: 'xml', xsl: 'xml', plist: 'xml', csproj: 'xml', html: 'html', htm: 'html',
+    vue: 'vue', hbs: 'handlebars', handlebars: 'handlebars', css: 'css', scss: 'scss', less: 'less',
+    js: 'javascript', mjs: 'javascript', cjs: 'javascript', jsx: 'javascript', ts: 'typescript', tsx: 'typescript', mts: 'typescript',
+    graphql: 'graphql', gql: 'graphql', md: 'markdown', markdown: 'markdown', mdx: 'mdx',
+    py: 'python', pyi: 'python', go: 'go', java: 'java', c: 'c', h: 'c', cpp: 'cpp', cc: 'cpp', cxx: 'cpp', hpp: 'cpp', hh: 'cpp',
+    cs: 'csharp', m: 'objectivec', mm: 'objectivec', php: 'php', dart: 'dart', lua: 'lua', sh: 'shell', bash: 'shell', zsh: 'shell',
+    zig: 'zig', proto: 'protobuf', sql: 'sql',
+  };
+
+  const langSel = $('lang');
+  {
+    const groups = {};
+    for (const [k, v] of Object.entries(LANGS)) {
+      const o = document.createElement('option'); o.value = k; o.textContent = v.label;
+      if (!v.group) { langSel.appendChild(o); continue; }
+      if (!groups[v.group]) { groups[v.group] = document.createElement('optgroup'); groups[v.group].label = v.group; langSel.appendChild(groups[v.group]); }
+      groups[v.group].appendChild(o);
+    }
+  }
+  try { const saved = localStorage.getItem('fmt-lang'); if (saved && LANGS[saved]) langSel.value = saved; } catch {}
+
+  // ---------- Lazy loading ----------
+  const scriptCache = {};
+  function loadScript(url) {
+    if (!scriptCache[url]) {
+      scriptCache[url] = new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = url; s.async = true;
+        s.onload = res;
+        s.onerror = () => { delete scriptCache[url]; s.remove(); const e = new Error('load'); e.loadError = true; rej(e); };
+        document.head.appendChild(s);
+      });
+    }
+    return scriptCache[url];
+  }
+  const isLoaded = (L) => {
+    if (L.kind === 'prettier') return !!scriptCache[PRETTIER + 'standalone.js'] && L.plugins.every((p) => scriptCache[PRETTIER + 'plugins/' + p + '.js']) && (!L.ext || scriptCache[L.ext[0]]);
+    if (L.kind === 'wasm') return !!modCache[L.mod];
+    if (L.kind === 'sql') return !!scriptCache[SQLF];
+    if (L.kind === 'toml') return !!modCache['smol-toml/index.js'];
+    return true;
+  };
+  async function loadPrettier(L) {
+    if (!window.process) window.process = { env: {}, platform: 'browser', version: '', versions: {}, cwd: () => '/', argv: [] };
+    await loadScript(PRETTIER + 'standalone.js');
+    await Promise.all(L.plugins.map((p) => loadScript(PRETTIER + 'plugins/' + p + '.js')));
+    const plugins = L.plugins.map((p) => window.prettierPlugins[p]);
+    if (L.ext) { await loadScript(L.ext[0]); plugins.push(window.prettierPlugins[L.ext[1]]); }
+    return { prettier: window.prettier, plugins };
+  }
+  // Local ES modules (WebAssembly formatters bundled in ./vendor)
+  const modCache = {};
+  function loadModule(path, init = true) {
+    if (!modCache[path]) {
+      modCache[path] = (async () => {
+        const m = await import('./vendor/' + path);
+        if (init && typeof m.default === 'function') await m.default();
+        return m;
+      })().catch((e) => { delete modCache[path]; const err = new Error(String(e && e.message || e)); err.loadError = true; err.local = true; throw err; });
+    }
+    return modCache[path];
+  }
+
+  // ---------- Auto-detect ----------
+  function detect(t) {
+    const s = t.replace(/^﻿/, '').trim();
+    const first = s.split('\n')[0];
+    const lines = s.split('\n');
+    const noComments = s.replace(/^\s*(\/\/|#(?!include|import|define|if|pragma|!)).*$/gm, '').trim();
+    if (/^[\[{]/.test(noComments) && !/^\{\s*\w+\s*(\(|\{)/.test(noComments) && !/^\[[\w.\-" ]+\]\s*$/m.test(first)) return 'json';
+    if (/^"(?:[^"\\]|\\.)*"$|^-?\d+(\.\d+)?$|^(true|false|null)$/.test(s)) return 'json';
+
+    // Shebang
+    if (/^#!/.test(s)) return /python/.test(first) ? 'python' : /node|deno|bun/.test(first) ? 'javascript' : /lua/.test(first) ? 'lua' : 'shell';
+
+    // Markup family
+    if (/^<\?php/i.test(s)) return 'php';
+    if (s.startsWith('<')) {
+      if (/^<\?xml/i.test(s)) return 'xml';
+      if (/^<(template|script\s+setup)[\s>]/i.test(s) || /<\/template>\s*(<script|<style|$)/i.test(s) && /^<template/.test(s)) return 'vue';
+      if (/\{\{[#/^>!]/.test(s)) return 'handlebars';
+      if (/\*ng(If|For)|\[\(ngModel\)\]|\(click\)=|@if\s*\(|@for\s*\(/.test(s)) return 'angular';
+      if (/^<!doctype html|<html[\s>]|<(head|body|div|span|p|a|script|style|meta|link|ul|ol|li|table|tr|td|section|nav|header|footer|main|button|input|form|img|br|h[1-6])[\s>/]/i.test(s)) return 'html';
+      return 'xml';
+    }
+
+    // Strong language signatures
+    if (/^\s*syntax\s*=\s*"proto[23]"/m.test(s) || /^\s*message\s+\w+\s*\{[\s\S]*=\s*\d+\s*;/m.test(s)) return 'protobuf';
+    if (/@import\("std"\)/.test(s)) return 'zig';
+    if (/^\s*package\s+\w+\s*$/m.test(s) && /\bfunc\b/.test(s)) return 'go';
+    if (/^\s*(#import|@interface|@implementation)\b/m.test(s)) return 'objectivec';
+    if (/^\s*#include\s*[<"]/m.test(s)) return /std::|\bclass\s+\w+|\bnamespace\b|\btemplate\s*<|cout|#include\s*<(iostream|vector|string|map|memory|algorithm)>/.test(s) ? 'cpp' : 'c';
+    if (/^\s*using\s+System(\.[\w.]+)?\s*;/m.test(s) || /\bnamespace\s+[\w.]+\s*[;{]/.test(s) && /\b(public|internal)\s+(static\s+)?(class|record|struct)\b|Console\.Write/.test(s)) return 'csharp';
+    if (/^\s*package\s+[\w.]+\s*;/m.test(s) || /^\s*import\s+java\./m.test(s) || /public\s+static\s+void\s+main\s*\(\s*String/.test(s) || /System\.out\.print/.test(s)) return 'java';
+    if (/^\s*import\s+'(package|dart):/m.test(s) || /^\s*void\s+main\s*\(\s*\)\s*(async\s*)?\{/m.test(s) && !/#include/.test(s)) return 'dart';
+    if (/^\s*(select|insert|update|delete|create|alter|drop|with|truncate|merge|grant|revoke|begin|declare|exec)\b/i.test(s) && /\b(from|into|table|set|values|view|index|database|procedure|as|where)\b/i.test(s)) return 'sql';
+    if (/^\s*local\s+(function\s+)?\w+/m.test(s) || /\bfunction\b[^\n]*\)\s*$/m.test(s) && /^\s*end\s*$/m.test(s) && !/[{};]\s*$/m.test(s)) return 'lua';
+    const pyLines = /^\s*(def\s+\w+\s*\(.*\)\s*(->\s*[^:]+)?:|class\s+\w+(\(.*\))?\s*:|from\s+[\w.]+\s+import\s+|import\s+[\w.]+(\s+as\s+\w+)?\s*$|if\s+__name__\s*==|elif\s+.*:|print\(.*\)\s*$|async\s+def\s|@\w+(\(.*\))?\s*$)/m;
+    if (pyLines.test(s) && !/[;{]\s*$/m.test(s.replace(/\{[^{}\n]*\}/g, ''))) return 'python';
+    if (/^\s*(echo|export|alias|source|set -e|sudo|apt(-get)?|npm|cd|mkdir|curl)\b/m.test(s) && /^\s*(fi|done|esac)\s*$|\$\{?\w+\}?|\|\||&&|^\s*(echo|export)\b/m.test(s) && !/[{};]\s*$/m.test(s.replace(/\$\{[^}]*\}/g, ''))) return 'shell';
+    if (/^\s*<\?php/.test(s)) return 'php';
+
+    // TOML / INI-style
+    const tomlish = lines.filter((l) => l.trim() && !/^\s*#/.test(l));
+    if (tomlish.length && /^\s*\[{1,2}[\w.\-" ]+\]{1,2}\s*$/m.test(s) && tomlish.every((l) => /^\s*(\[{1,2}[\w.\-" ]+\]{1,2}|[\w.\-"']+\s*=.*|[\]\s,"'\w.{}:=-]+)\s*$/.test(l))) return 'toml';
+    if (tomlish.length && tomlish.every((l) => /^\s*[\w.\-"]+\s*=\s*\S.*$/.test(l)) && !/[;]\s*$/m.test(s) && !/\b(const|let|var)\b/.test(s)) return 'toml';
+
+    const tsHints = /\b(interface|type)\s+\w+\s*(=|<|extends|\{)[\s\S]*?:\s*(string|number|boolean|any|unknown|void)\b|:\s*(string|number|boolean|any|unknown|void)(\[\])?\s*[;,)=]|\bimplements\b|\bas\s+(const|string|number)\b|\benum\s+\w+\s*\{|\b(public|private|protected|readonly)\s+\w+/;
+    if (/^(query|mutation|subscription|fragment)\b[^=;]*\{/.test(s)) return 'graphql';
+    if (/^(schema|type|input|enum|interface|union|scalar|directive|extend)\b[^=;()]*\{/.test(s) && !tsHints.test(s)) return 'graphql';
+    if (/^\{\s*\w+\s*(\(|\{)/.test(s)) return 'graphql';
+    if (/^(---|%YAML)/.test(s)) return 'yaml';
+    if (/^(import|export)\s[^\n]*\n[\s\S]*^#{1,6}\s/m.test(s) || /^#{1,6}\s[\s\S]*<[A-Z]\w*[\s/>]/m.test(s)) return 'mdx';
+    if (/^(#{1,6}\s|```|>\s|\*\s|-\s\[|\d+\.\s)/.test(s) && !/[{};]\s*$/m.test(s)) return 'markdown';
+    const noJs = !/\b(function|const|let|var|return|import|export|class)\b|=>/.test(s);
+    const css = s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*([$@][\w-]+\s*:[^;{}]*;\s*)+/, '').trim();
+    const brace = css.indexOf('{');
+    const pre = brace > 0 ? css.slice(0, brace) : '';
+    const preNoPseudo = pre.replace(/:(not|is|where|has|nth-[\w-]+|lang|dir)\([^)]*\)/g, '');
+    if (noJs && pre && /:/.test(css) && !/[=;"'`]/.test(pre) && (pre.trim().startsWith('@') || !/[()]/.test(preNoPseudo))) {
+      if (/(^|[;{}\s])@[\w-]+\s*:|\.[\w-]+\(\);|@\{/m.test(s) && !/\$[\w-]+\s*:/.test(s)) return 'less';
+      if (/\$[\w-]+\s*:|@mixin|@include|@extend|&[:.\-_]|#\{/.test(s)) return 'scss';
+      return 'css';
+    }
+    if (noJs && /^@(media|import|font-face|keyframes|charset)/.test(s)) return 'css';
+    if (/^[\w"'.-][\w\s"'.-]*:(\s.*)?$/.test(first) && !/[;{}()]\s*$/.test(first)) return 'yaml';
+    if (/^- \S/.test(first) && lines.every((l) => !l.trim() || /^\s*(- |[\w"'.-][\w\s"'.-]*:|#)/.test(l))) return 'yaml';
+    if (/^\s*(select|insert|update|delete|create|alter|drop|with)\b/i.test(s)) return 'sql';
+    if (/^\s*(\/\/\s*)?@flow\b|^\s*\/\*\s*@flow/m.test(s)) return 'flow';
+    if (tsHints.test(s)) return 'typescript';
+    if (/^#{1,6}\s/m.test(s) && !/[;{}]\s*$/m.test(s)) return 'markdown';
+    return 'javascript';
+  }
+
+  // ---------- XML ----------
+  const escText = (v) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const escAttr = (v) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  class FmtError extends Error { constructor(msg, line, col) { super(msg); this.line = line; this.col = col; } }
+
+  function formatXml(text, minify, opts) {
+    const doc = new DOMParser().parseFromString(text, 'application/xml');
+    const pe = doc.getElementsByTagName('parsererror')[0];
+    if (pe) {
+      const raw = pe.textContent || '';
+      let m = /error on line (\d+) at column (\d+):\s*([\s\S]*?)(Below is a rendering|$)/i.exec(raw);
+      if (m) throw new FmtError(m[3].trim(), +m[1], +m[2]);
+      m = /XML Parsing Error:\s*([\s\S]*?)\n[\s\S]*Line Number (\d+), Column (\d+)/i.exec(raw);
+      if (m) throw new FmtError(m[1].trim(), +m[2], +m[3]);
+      throw new FmtError(raw.split('\n')[0] || 'Invalid XML', 1, 1);
+    }
+    const decl = (/^\s*(<\?xml[\s\S]*?\?>)/.exec(text) || [])[1];
+    const ind = opts.tabs ? '\t' : ' '.repeat(opts.width);
+    const nl = minify ? '' : '\n';
+    const out = [];
+    const attrs = (el) => [...el.attributes].map((a) => ` ${a.name}="${escAttr(a.value)}"`).join('');
+    function walk(node, depth) {
+      const pad = minify ? '' : ind.repeat(depth);
+      switch (node.nodeType) {
+        case 1: {
+          const kids = [...node.childNodes].filter((k) => !(k.nodeType === 3 && !k.nodeValue.trim()));
+          const open = `<${node.nodeName}${attrs(node)}`;
+          if (!kids.length) { out.push(pad + open + '/>'); return; }
+          if (kids.length === 1 && kids[0].nodeType === 3) {
+            out.push(pad + open + '>' + escText(kids[0].nodeValue.trim()) + `</${node.nodeName}>`); return;
+          }
+          out.push(pad + open + '>');
+          kids.forEach((k) => walk(k, depth + 1));
+          out.push(pad + `</${node.nodeName}>`); return;
+        }
+        case 3: out.push(pad + escText(node.nodeValue.trim())); return;
+        case 4: out.push(pad + `<![CDATA[${node.nodeValue}]]>`); return;
+        case 7: out.push(pad + `<?${node.target}${node.data ? ' ' + node.data : ''}?>`); return;
+        case 8: if (!minify) out.push(pad + `<!--${node.nodeValue}-->`); return;
+        case 10: out.push(pad + new XMLSerializer().serializeToString(node)); return;
+      }
+    }
+    [...doc.childNodes].forEach((n) => walk(n, 0));
+    return (decl ? decl + nl : '') + out.join(nl);
+  }
+
+  const minifyCss = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ')
+    .replace(/\s*([{};,>])\s*/g, '$1').replace(/:\s+/g, ':').replace(/;}/g, '}').trim();
+
+  // ---------- Output rendering ----------
+  async function renderCode(code, hl, id) {
+    output.textContent = code;
+    if (!hl || code.length > 300000) return;
+    try {
+      await loadScript(HLJS + 'highlight.min.js');
+      if (!window.hljs.getLanguage(hl)) await loadScript(HLJS + 'languages/' + hl + '.min.js');
+      if (id !== runId || !window.hljs.getLanguage(hl)) return;
+      output.innerHTML = window.hljs.highlight(code, { language: hl, ignoreIllegals: true }).value;
+    } catch { /* plain text is fine */ }
+  }
+
+  const PLACEHOLDER = (label) => `<span class="placeholder">Formatted ${label} will appear here.</span>`;
+  function setPlaceholder(msg) { output.innerHTML = `<span class="placeholder">${msg}</span>`; }
+
+  function updateUi(lang, detected) {
+    const L = LANGS[lang];
+    const sel = langSel.value;
+    const what = lang ? L.label : (sel === 'auto' ? 'code' : LANGS[sel].label);
+    $('title').innerHTML = `<span class="brand">my</span> ${esc(what)} formatter`;
+    document.title = `my ${what} formatter`;
+    $('inLang').textContent = lang ? (detected ? `${L.label} · auto-detected` : L.label) : '';
+    const isJson = lang === 'json' || (!lang && sel === 'json');
+    $('sortWrap').style.display = isJson ? '' : 'none';
+    $('fixWrap').style.display = isJson ? '' : 'none';
+    const canMin = lang ? !!L.minify : true;
+    $('btnMinify').disabled = !canMin;
+    $('btnMinify').title = canMin ? '' : `Minify isn't available for ${L.label}`;
+    if (!canMin && mode === 'minify') mode = 'format';
+    const shown = sel === 'auto' ? 'code' : LANGS[sel].label;
+    input.placeholder = `Paste your ${shown} here… (or drop a file)`;
+  }
+
+  // ---------- Main ----------
+  let runId = 0;
+  const indentOpts = () => {
+    const v = $('indent').value;
+    return v === 'tab' ? { tabs: true, width: 4, str: '\t' } : { tabs: false, width: +v, str: +v };
+  };
+  const posFromLineCol = (text, line, col) => {
+    let pos = 0;
+    for (let l = 1; l < line; l++) { const nx = text.indexOf('\n', pos); if (nx < 0) break; pos = nx + 1; }
+    let end = text.indexOf('\n', pos); if (end < 0) end = text.length;
+    return Math.min(end, pos + Math.max(0, col - 1));
+  };
+  const where = (p) => `<span class="detail">— line ${p.line}, column ${p.col}</span>`;
+
+  function run(immediate) {
+    immediate = immediate === true;
+    const id = ++runId;
+    const text = input.value;
+    if (!text.trim()) {
+      lastOutput = '';
+      updateUi(langSel.value === 'auto' ? '' : langSel.value, false);
+      setPlaceholder(`Formatted ${langSel.value === 'auto' ? 'code' : LANGS[langSel.value].label} will appear here.`);
+      report('', '', '', '', '');
+      return;
+    }
+    let lang = langSel.value, detected = false;
+    if (lang === 'auto') { lang = detect(text); detected = true; }
+    updateUi(lang, detected);
+    const name = LANGS[lang].label + (detected ? ' (auto-detected)' : '');
+    if (lang === 'json') return runJson(text, immediate, name);
+    return runOther(text, lang, immediate, name, id);
+  }
+
+  // ---------- TOML (validate with smol-toml, tidy line-by-line so comments survive) ----------
+  function tidyToml(text, o) {
+    const ind = o.tabs ? '\t' : ' '.repeat(o.width);
+    const out = [];
+    let inMulti = null, depth = 0;
+    for (const raw of text.replace(/\r\n?/g, '\n').split('\n')) {
+      if (inMulti) {
+        out.push(raw);
+        if (raw.split(inMulti).length % 2 === 0) inMulti = null;
+        continue;
+      }
+      let line = raw.trim();
+      if (!line) { if (out.length && out[out.length - 1] !== '') out.push(''); continue; }
+      if (depth === 0 && /^\[{1,2}[^\]]+\]{1,2}(\s*#.*)?$/.test(line)) {
+        if (out.length && out[out.length - 1] !== '') out.push('');
+        line = line.replace(/^(\[{1,2})\s*(.*?)\s*(\]{1,2})/, (_, a, b, c) => a + b.replace(/\s*\.\s*/g, '.') + c);
+        out.push(line); continue;
+      }
+      if (depth === 0) {
+        const m = /^((?:"(?:[^"\\]|\\.)*"|'[^']*'|[\w.\-]+)(?:\s*\.\s*(?:"(?:[^"\\]|\\.)*"|'[^']*'|[\w\-]+))*)\s*=\s*(.*)$/.exec(line);
+        if (m) line = `${m[1].replace(/\s*\.\s*/g, '.')} = ${m[2]}`;
+      }
+      const stripped = line.replace(/"(?:[^"\\]|\\.)*"|'[^']*'/g, '""').replace(/#.*$/, '');
+      const closes = (stripped.match(/[\]}]/g) || []).length, opens = (stripped.match(/[\[{]/g) || []).length;
+      const lead = depth > 0 ? Math.max(0, depth - (/^[\]}]/.test(line) ? 1 : 0)) : 0;
+      out.push(ind.repeat(lead) + line);
+      if (!(depth === 0 && /^\[/.test(line))) depth = Math.max(0, depth + opens - closes);
+      const tq = line.match(/"""|'''/g);
+      if (tq && tq.length % 2 === 1) inMulti = tq[0];
+    }
+    while (out.length && out[out.length - 1] === '') out.pop();
+    return out.join('\n');
+  }
+
+  // ---------- Error location helpers ----------
+  function byteToCharPos(text, byte) {
+    const bytes = new TextEncoder().encode(text);
+    return new TextDecoder().decode(bytes.slice(0, byte)).length;
+  }
+  function locateError(e, text) {
+    let msg = String((e && e.message) || e);
+    let line = null, col = null, m;
+    if (e instanceof FmtError) { line = e.line; col = e.col; }
+    else if (e && e.loc && e.loc.start) { line = e.loc.start.line; col = e.loc.start.column || 1; }
+    else if (e && typeof e.line === 'number') { line = e.line; col = e.column || 1; }
+    else if ((m = /byte range (\d+)\.\.(\d+)/.exec(msg))) { const lc = lineCol(text, byteToCharPos(text, +m[1])); line = lc.line; col = lc.col; }
+    else if ((m = /line (\d+),? column (\d+)/i.exec(msg))) { line = +m[1]; col = +m[2]; }
+    else if ((m = /\((\d+):(\d+) to \d+:\d+\)/.exec(msg))) { line = +m[1]; col = +m[2]; }
+    else if ((m = /^(?:[\w./-]+:)?(\d+):(\d+):/.exec(msg))) { line = +m[1]; col = +m[2]; }
+    // Clean up the message
+    if ((m = /line \d+, column \d+ of [^:]+:\s*([^\n]+)/.exec(msg))) msg = m[1];
+    msg = msg
+      .replace(/^error parsing:\s*\n?\s*-\s*/i, '')
+      .replace(/^Invalid TOML document:\s*/, '')
+      .split('\n')[0]
+      .replace(/\s*\(\d+:\d+ to \d+:\d+\),?/, '')
+      .replace(/^(?:[\w./-]+:)?\d+:\d+:\s*/, '')
+      .replace(/\s*at byte range \d+\.\.\d+/, '')
+      .replace(/\s*\(\d+:\d+\)\s*$/, '')
+      .replace(/\s*For more info see \S+/, '')
+      .replace(/^(CssSyntaxError|SyntaxError|Syntax Error):\s*/i, '')
+      .replace(/ at line \d+ column \d+/i, '')
+      .replace(/^Parse error at token: /, 'Unexpected token ')
+      .replace(/^Parse Error\s*:\s*/i, '')
+      .replace(/ on line \d+$/, '')
+      .trim() || 'Could not parse the input';
+    return { msg, line, col };
+  }
+
+  async function runOther(text, lang, immediate, name, id) {
+    const L = LANGS[lang];
+    const opts = indentOpts();
+    const done = mode === 'minify' ? 'minified' : 'formatted successfully';
+    try {
+      if (!isLoaded(L)) currentEl.innerHTML = `<span class="badge info">… Loading ${esc(L.label)} formatter</span>`;
+      let out;
+      if (L.kind === 'prettier') {
+        const { prettier, plugins } = await loadPrettier(L);
+        if (id !== runId) return;
+        out = await prettier.format(text, {
+          parser: L.parser, plugins, tabWidth: opts.width, useTabs: opts.tabs, printWidth: 100, proseWrap: 'preserve', ...(L.popts || {}),
+        });
+        if (mode === 'minify' && lang === 'css') out = minifyCss(out);
+      } else if (L.kind === 'wasm') {
+        const m = await loadModule(L.mod);
+        if (id !== runId) return;
+        out = L.fmt(m, text, opts);
+        if (!out && text.trim()) throw new Error(`Could not parse this ${L.label} code`);
+      } else if (L.kind === 'xml') {
+        out = formatXml(text, mode === 'minify', opts);
+      } else if (L.kind === 'toml') {
+        const t = await loadModule('smol-toml/index.js', false);
+        if (id !== runId) return;
+        t.parse(text);
+        out = tidyToml(text, opts);
+      } else if (L.kind === 'sql') {
+        await loadScript(SQLF);
+        if (id !== runId) return;
+        out = window.sqlFormatter.format(text, { language: L.dialect, tabWidth: opts.width, useTabs: opts.tabs, keywordCase: 'upper' });
+      }
+      if (id !== runId) return;
+      lastOutput = String(out).replace(/\s+$/, '');
+      const n = lastOutput.split('\n').length;
+      const stats = `${n.toLocaleString()} line${n === 1 ? '' : 's'} · ${fmtSize(new Blob([lastOutput]).size)}`;
+      const checks = L.validates !== false;
+      const note = L.note ? `<div class="detail">${esc(L.note)}</div>` : '';
+      report('ok', checks ? `Valid ${name} — ${done}` : `${name} — ${done}`, `<div class="detail">${stats}</div>${note}`, stats,
+        'ok|' + lang + '|' + mode + '|' + text.length, immediate, checks ? `Valid ${L.label}` : 'Formatted');
+      await renderCode(lastOutput, L.hl, id);
+    } catch (e) {
+      if (id !== runId) return;
+      lastOutput = '';
+      if (e && e.loadError) {
+        const hint = e.local
+          ? (location.protocol === 'file:'
+              ? 'This language uses a WebAssembly formatter from the vendor folder, which browsers block when you open the page straight from disk. Open it through GitHub Pages or a local web server instead.'
+              : 'Make sure the vendor folder was uploaded next to index.html, then press Format.')
+          : 'The formatter library downloads on first use. Check your internet connection, then press Format.';
+        setPlaceholder(`Couldn't load the ${esc(L.label)} formatter.`);
+        report('err', `Couldn't load the ${L.label} formatter`, `<div class="detail">${esc(hint)}</div>`, '', 'load|' + lang, immediate, 'Load failed');
+        return;
+      }
+      const { msg, line, col } = locateError(e, text);
+      const loc = line ? `<div class="detail">${esc(name)} — line ${line}, column ${col}</div>${snippetHtml(text, posFromLineCol(text, line, col))}`
+                       : `<div class="detail">${esc(name)}</div>`;
+      setPlaceholder(`Invalid ${esc(L.label)} — check the logs below.`);
+      report('err', msg, loc, '', 'err|' + lang + '|' + msg + '|' + line + ':' + col, immediate, `Invalid ${L.label}`);
+    }
+  }
+
+  function runJson(text, immediate, name) {
+    const indentSel = $('indent').value;
+    const indent = indentSel === 'tab' ? '\t' : Number(indentSel);
+    const render = (val) => {
+      if ($('sortKeys').checked) val = sortDeep(val);
+      lastOutput = mode === 'minify' ? JSON.stringify(val) : JSON.stringify(val, null, indent);
+      output.innerHTML = highlight(lastOutput);
+      return `${countNodes(val).toLocaleString()} nodes · ${fmtSize(new Blob([lastOutput]).size)}`;
+    };
+    const done = mode === 'minify' ? 'minified' : 'formatted successfully';
+
+    let strictErr = null;
+    try {
+      const { value } = parse(text, true);
+      const stats = render(value);
+      report('ok', `Valid ${name} — ${done}`, `<div class="detail">${stats}</div>`, stats,
+        'ok|json|' + mode + '|' + text.length, immediate, 'Valid JSON');
+      return;
+    } catch (e) {
+      if (!(e instanceof ParseError)) throw e;
+      strictErr = e;
+    }
+    const lc = lineCol(text, strictErr.pos);
+
+    if ($('autoFix').checked) {
+      try {
+        const { value, fixes } = parse(text, false);
+        const stats = render(value);
+        report('warn', mode === 'minify' ? 'Input was invalid — auto-fixed & minified' : 'Input was invalid — auto-fixed',
+          `<div>${esc(strictErr.message)} ${where(lc)}</div>` +
+          `<div class="detail">Changes: ${fixes.map(esc).join(' · ') || 'minor cleanup'}</div>`,
+          stats, 'warn|' + mode + '|' + fixes.join() + '|' + text.length, immediate, 'Fixed');
+        return;
+      } catch (e2) {
+        if (!(e2 instanceof ParseError)) throw e2;
+        const p = lineCol(text, e2.pos);
+        lastOutput = '';
+        setPlaceholder('Couldn\'t repair this automatically — check the logs below.');
+        report('err', e2.message, `<div>${where(p)}</div>${snippetHtml(text, e2.pos)}`,
+          '', 'err|' + e2.message + '|' + e2.pos, immediate, 'Invalid JSON');
+        return;
+      }
+    }
+    lastOutput = '';
+    setPlaceholder('Invalid JSON — check the logs below (or turn on Auto-fix).');
+    report('err', strictErr.message, `<div>${where(lc)}</div>${snippetHtml(text, strictErr.pos)}`,
+      '', 'err|' + strictErr.message + '|' + strictErr.pos, immediate, 'Invalid JSON');
+  }
+
+  let timer;
+  const schedule = () => { clearTimeout(timer); timer = setTimeout(run, input.value.length > 500000 ? 400 : 200); };
+
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1400);
+  }
+
+  // ---------- Samples (intentionally messy) ----------
+  const SAMPLES = {
+    json: `// A messy sample — try the Auto-fix toggle
+{
+  name: 'SupportNinja Ticket',
+  id: 10423,
+  priority: "high",
+  tags: ['billing', 'urgent',],
+  customer: { first: "Ana", last: "Reyes", vip: True, notes: None }
+  "created_at": "2026-11-17T09:30:00+08:00",
+}`,
+    xml: `<?xml version="1.0" encoding="UTF-8"?><tickets><ticket id="10423" priority="high"><subject>Refund request</subject><customer><name>Ana Reyes</name><email>ana@example.com</email></customer><tags><tag>billing</tag><tag>urgent</tag></tags></ticket></tickets>`,
+    html: `<!DOCTYPE html><html><head><title>Ticket</title></head><body><div class="card"><h1>Ticket #10423</h1><p>Customer: <b>Ana Reyes</b></p><ul><li>billing</li><li>urgent</li></ul><button onclick="resolve()">Resolve</button></div></body></html>`,
+    css: `.card{padding:16px;border-radius:8px;background:#fff}.card h1{font-size:20px;margin:0 0 8px}@media (max-width:600px){.card{padding:8px}}`,
+    scss: `$brand:#3b6ef5;.card{padding:16px;&:hover{border-color:$brand}.title{color:darken($brand,10%);font-weight:600}}`,
+    less: `@brand:#3b6ef5;.card{padding:16px;&:hover{border-color:@brand}.title{color:darken(@brand,10%)}}`,
+    javascript: `const tickets=[{id:10423,priority:'high',tags:['billing','urgent']},{id:10424,priority:'low',tags:[]}];function urgent(list){return list.filter(t=>t.priority==='high').map(t=>({...t,flag:true}))}console.log(urgent(tickets))`,
+    typescript: `interface Ticket{id:number;priority:'low'|'high';tags:string[]}const urgent=(list:Ticket[]):Ticket[]=>list.filter(t=>t.priority==='high');export default urgent`,
+    yaml: `ticket:
+    id: 10423
+    priority:   high
+    tags: [billing,   urgent]
+    customer:
+          name: Ana Reyes
+          vip: true`,
+    markdown: `# Ticket 10423
+*  Customer: **Ana Reyes**
+*  Priority:   high
+Some notes   about the issue.
+|Tag|Owner|
+|-|-|
+|billing|Troy|
+|urgent|Ana|`,
+    graphql: `query GetTicket($id:ID!){ticket(id:$id){id priority tags customer{name email}}}`,
+    sql: `select t.id, t.priority, c.name from tickets t join customers c on c.id = t.customer_id where t.priority = 'high' and t.created_at > '2026-11-01' order by t.created_at desc limit 20`,
+    json5: `{
+  // JSON5 allows comments, unquoted keys and trailing commas
+  name:'SupportNinja',tags:['billing','urgent',],ratio:.5,
+}`,
+    toml: `title="Ticket export"
+[owner]
+name="Troy"
+  team = "Support"
+[database]
+ports=[ 8000,8001,
+8002 ]
+enabled=true`,
+    vue: `<template><div class="card"><h1>{{ title }}</h1><button @click="count++">Clicked {{count}} times</button></div></template>
+<script setup>import {ref} from 'vue';const count=ref(0);const title='Ticket #10423'<\/script>
+<style scoped>.card{padding:16px}</style>`,
+    handlebars: `<div class="ticket">{{#if urgent}}<span class="badge">Urgent</span>{{/if}}<ul>{{#each tags}}<li>{{this}}</li>{{/each}}</ul></div>`,
+    python: `import os,sys
+def summarize( tickets,limit = 10 ):
+  urgent=[t for t in tickets if t['priority']=='high']
+  return {'count':len(urgent),'ids':[t['id'] for t in urgent][:limit]}
+if __name__=='__main__':print(summarize([{'id':1,'priority':'high'}]))`,
+    go: `package main
+import "fmt"
+type Ticket struct{ID int;Priority string}
+func main(){
+tickets:=[]Ticket{{1,"high"},{2,"low"}}
+for _,t:=range tickets{if t.Priority=="high"{fmt.Println(t.ID)}}
+}`,
+    java: `public class Main{public static void main(String[] args){int[] ids={10423,10424};for(int id:ids){if(id%2==1){System.out.println("Ticket "+id);}}}}`,
+    c: `#include <stdio.h>
+int main(){int ids[]={10423,10424};for(int i=0;i<2;i++){if(ids[i]%2){printf("Ticket %d\\n",ids[i]);}}return 0;}`,
+    cpp: `#include <iostream>
+#include <vector>
+class Ticket{public:int id;std::string priority;Ticket(int i,std::string p):id(i),priority(p){}};
+int main(){std::vector<Ticket> v={{1,"high"},{2,"low"}};for(auto&t:v){if(t.priority=="high")std::cout<<t.id<<std::endl;}}`,
+    csharp: `using System;
+namespace Support{public class Program{public static void Main(string[] args){var ids=new[]{10423,10424};foreach(var id in ids){if(id%2==1){Console.WriteLine($"Ticket {id}");}}}}}`,
+    php: `<?php
+class Ticket{public function __construct(public int $id,public string $priority){}}
+$tickets=[new Ticket(1,'high'),new Ticket(2,'low')];
+foreach($tickets as $t){if($t->priority==='high'){echo "Ticket {$t->id}\\n";}}`,
+    dart: `void main(){var tickets=[{'id':1,'priority':'high'},{'id':2,'priority':'low'}];for(var t in tickets){if(t['priority']=='high'){print(t['id']);}}}`,
+    lua: `local function urgent(tickets) local out={} for _,t in ipairs(tickets) do if t.priority=="high" then table.insert(out,t.id) end end return out end
+print(#urgent({{id=1,priority="high"}}))`,
+    shell: `#!/bin/bash
+for f in *.json;do
+if [ -s "$f" ];then
+echo "Formatting $f"
+else
+echo "Skipping empty $f"
+fi
+done`,
+    angular: `<div class="list"><app-ticket *ngFor="let t of tickets" [ticket]="t" (click)="open(t)"></app-ticket><p *ngIf="!tickets.length">No tickets</p></div>`,
+    flow: `// @flow
+type Ticket={id:number,priority:'low'|'high'};function urgent(list:Array<Ticket>):Array<Ticket>{return list.filter(t=>t.priority==='high')}`,
+    mdx: `import {Chart} from './chart'
+# Weekly report
+Tickets   closed this week:
+<Chart data={[1,2,3]}   />`,
+    objectivec: `#import <Foundation/Foundation.h>
+@interface Ticket:NSObject
+@property(nonatomic)NSInteger ticketId;
+@end
+@implementation Ticket
+@end`,
+    zig: `const std=@import("std");pub fn main() void{const ids=[_]u32{10423,10424};for(ids)|id|{std.debug.print("{d}\n",.{id});}}`,
+    protobuf: `syntax="proto3";package support;message Ticket{int32 id=1;string priority=2;repeated string tags=3;}`,
+  };
+  const sampleOrder = Object.keys(SAMPLES);
+  let sampleIdx = 0;
+
+  input.addEventListener('input', schedule);
+  const act = () => { lastLogKey = ''; run(true); };
+  langSel.onchange = () => {
+    try { localStorage.setItem('fmt-lang', langSel.value); } catch {}
+    mode = 'format';
+    addLog('info', `Language set to ${LANGS[langSel.value].label}`);
+    act();
+  };
+  $('btnFormat').onclick = () => { mode = 'format'; act(); };
+  $('btnMinify').onclick = () => { mode = 'minify'; act(); };
+  $('indent').onchange = () => { mode = 'format'; act(); };
+  $('sortKeys').onchange = act;
+  $('autoFix').onchange = act;
+  $('btnClear').onclick = () => { input.value = ''; run(); addLog('info', 'Input cleared'); input.focus(); };
+  $('btnClearLogs').onclick = () => { logList.innerHTML = '<div class="log-empty">Logs cleared.</div>'; lastLogKey = ''; };
+  $('btnUseOutput').onclick = () => { if (lastOutput) { input.value = lastOutput; addLog('info', 'Output moved to input'); act(); toast('Moved to input'); } };
+  $('btnCopy').onclick = async () => {
+    if (!lastOutput) return toast('Nothing to copy');
+    try { await navigator.clipboard.writeText(lastOutput); toast('Copied to clipboard'); addLog('info', 'Output copied to clipboard'); }
+    catch {
+      const r = document.createRange(); r.selectNodeContents(output);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      try { document.execCommand('copy'); toast('Copied to clipboard'); addLog('info', 'Output copied to clipboard'); } catch { toast('Press Ctrl/Cmd+C to copy'); }
+    }
+  };
+  $('btnSample').onclick = () => {
+    mode = 'format';
+    let key = langSel.value;
+    if (key === 'auto') { key = sampleOrder[sampleIdx % sampleOrder.length]; sampleIdx++; }
+    input.value = SAMPLES[key] ?? (LANGS[key].kind === 'sql' ? SAMPLES.sql : SAMPLES.json);
+    addLog('info', `${LANGS[key].label} sample loaded`);
+    act();
+  };
+  $('btnOpen').onclick = () => $('file').click();
+  $('file').onchange = (e) => { const f = e.target.files[0]; if (f) readFile(f); e.target.value = ''; };
+  function readFile(f) {
+    const r = new FileReader();
+    r.onload = () => {
+      input.value = r.result; mode = 'format';
+      const ext = (f.name.split('.').pop() || '').toLowerCase();
+      const lang = EXT[ext];
+      let note = fmtSize(f.size);
+      if (lang && langSel.value !== 'auto' && langSel.value !== lang) {
+        langSel.value = lang; note += ` · language switched to ${LANGS[lang].label}`;
+        try { localStorage.setItem('fmt-lang', lang); } catch {}
+      }
+      addLog('info', `Loaded file: ${f.name}`, `<div class="detail">${esc(note)}</div>`);
+      act();
+    };
+    r.readAsText(f);
+  }
+
+  input.addEventListener('dragover', (e) => { e.preventDefault(); input.classList.add('drag'); });
+  input.addEventListener('dragleave', () => input.classList.remove('drag'));
+  input.addEventListener('drop', (e) => {
+    input.classList.remove('drag');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) { e.preventDefault(); readFile(f); }
+  });
+  // Tab key inserts indentation in the input
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      const s = input.selectionStart, en = input.selectionEnd;
+      input.setRangeText('  ', s, en, 'end'); schedule();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { mode = 'format'; act(); }
+  });
+  run();
+
+  // Theme switch (dark by default)
+  const themeToggle = $('themeToggle');
+  function applyTheme(t) {
+    if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+    themeToggle.checked = t === 'dark';
+  }
+  let theme = 'dark';
+  try { theme = localStorage.getItem('jsonfmt-theme') === 'light' ? 'light' : 'dark'; } catch {}
+  applyTheme(theme);
+  themeToggle.onchange = () => {
+    theme = themeToggle.checked ? 'dark' : 'light';
+    applyTheme(theme);
+    try { localStorage.setItem('jsonfmt-theme', theme); } catch {}
+  };
+
+
+  // ---------- Like (simple toggle, remembered in this browser) ----------
+  const likeBtn = $('btnLike');
+  const setLike = (on) => { likeBtn.setAttribute('aria-pressed', String(on)); likeBtn.querySelector('.like-text').textContent = on ? 'Liked' : 'Like'; };
+  try { setLike(localStorage.getItem('fmt-liked') === '1'); } catch {}
+  likeBtn.onclick = () => {
+    const on = likeBtn.getAttribute('aria-pressed') !== 'true';
+    setLike(on);
+    likeBtn.classList.remove('pop'); void likeBtn.offsetWidth; likeBtn.classList.add('pop');
+    try { localStorage.setItem('fmt-liked', on ? '1' : '0'); } catch {}
+    if (on) toast('Thanks for the like! ♥');
+  };
+
+  // ---------- Feedback form (saved by server.js into feedback.txt) ----------
+  const fb = { modal: $('fbModal'), form: $('fbForm'), name: $('fbName'), email: $('fbEmail'), comment: $('fbComment'),
+               err: $('fbError'), send: $('fbSend'), body: $('fbBody'), count: $('fbCount') };
+  const fbBodyHtml = fb.body.innerHTML;
+  function openFeedback() {
+    fb.modal.hidden = false;
+    if (!fb.body.querySelector('#fbName')) resetFeedback();
+    setTimeout(() => (fb.name.value ? fb.comment : fb.name).focus(), 30);
+  }
+  function closeFeedback() { fb.modal.hidden = true; }
+  function resetFeedback() {
+    fb.body.innerHTML = fbBodyHtml;
+    Object.assign(fb, { name: $('fbName'), email: $('fbEmail'), comment: $('fbComment'), err: $('fbError'), count: $('fbCount') });
+    fb.send.hidden = false; fb.send.disabled = false; fb.send.textContent = 'Send'; $('fbCancel').textContent = 'Cancel';
+    wireCount();
+  }
+  function wireCount() {
+    fb.comment.oninput = () => { fb.count.textContent = `${fb.comment.value.length} / 5000`; fb.comment.classList.remove('invalid'); fb.err.textContent = ''; };
+    fb.name.oninput = fb.email.oninput = (e) => { e.target.classList.remove('invalid'); fb.err.textContent = ''; };
+  }
+  wireCount();
+  $('btnFeedback').onclick = openFeedback;
+  $('fbClose').onclick = closeFeedback;
+  $('fbCancel').onclick = closeFeedback;
+  fb.modal.addEventListener('mousedown', (e) => { if (e.target === fb.modal) closeFeedback(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !fb.modal.hidden) closeFeedback(); });
+
+  fb.form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = fb.name.value.trim(), email = fb.email.value.trim(), comment = fb.comment.value.trim();
+    [fb.name, fb.email, fb.comment].forEach((el) => el.classList.remove('invalid'));
+    let bad = null;
+    if (!name) bad = [fb.name, 'Please enter your name.'];
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) bad = [fb.email, 'Please enter a valid email.'];
+    else if (!comment) bad = [fb.comment, 'Please write a comment.'];
+    if (bad) { bad[0].classList.add('invalid'); bad[0].focus(); fb.err.textContent = bad[1]; return; }
+
+    fb.err.textContent = ''; fb.send.disabled = true; fb.send.textContent = 'Sending…';
+    try {
+      const res = await fetch('api/feedback', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, comment }),
+      });
+      let data = null; try { data = await res.json(); } catch {}
+      if (!res.ok || !data || !data.ok) {
+        const e2 = new Error((data && data.error) || (res.status === 404 || res.status === 405 ? 'server' : `HTTP ${res.status}`));
+        e2.noServer = !data; throw e2;
+      }
+      fb.body.innerHTML = `<div class="fb-done"><div class="big">✓</div><div><b>Thank you, ${esc(name)}!</b></div><div class="detail">Your feedback was sent.</div></div>`;
+      fb.send.hidden = true; $('fbCancel').textContent = 'Close';
+      addLog('ok', 'Feedback sent', `<div class="detail">Thanks, ${esc(name)}!</div>`);
+      setTimeout(() => { if (!fb.modal.hidden && fb.send.hidden) closeFeedback(); }, 2500);
+      setTimeout(resetFeedback, 2700);
+    } catch (err) {
+      fb.send.disabled = false; fb.send.textContent = 'Send';
+      fb.err.textContent = err.noServer || err instanceof TypeError
+        ? 'Feedback can\'t be saved here — the feedback server isn\'t running. (Run "node server.js" to enable it.)'
+        : err.message;
+      addLog('err', 'Feedback not sent', `<div class="detail">${esc(fb.err.textContent)}</div>`);
+    }
+  });
+
+  $('year').textContent = new Date().getFullYear();
+  window.__parse = parse; // for testing
+})();
+</script>
+</body>
+</html>
