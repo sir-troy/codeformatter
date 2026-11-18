@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>my code formatter</title>
+<title>Code Formatter</title>
 <style>
   :root {
     --bg: #f6f7f9; --panel: #ffffff; --border: #e2e5ea; --text: #1d2430; --muted: #6b7380;
@@ -169,13 +169,19 @@
     main { grid-template-columns: 1fr; grid-template-rows: 320px 320px 220px; } footer { flex-wrap: wrap; } body { height: auto; } html, body { height: auto; }
   }
 </style>
+<link rel="stylesheet" href="useful-indeed/footer.css">
+<script src="version-log.js"></script>
+<link rel="canonical" href="https://codeformatter.useful-indeed.com/">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="apple-touch-icon" href="logo.svg">
+<style id="useful-indeed-mobile">#title{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}#title .ui-applogo{width:24px;height:24px;border-radius:6px;display:block}</style>
 </head>
 <body>
 <header>
   <div class="controls">
     <select id="lang" class="lang" title="Language / format" aria-label="Language"></select>
   </div>
-  <h1 id="title"><span class="brand">my</span> code formatter</h1>
+  <h1 id="title"><img class="ui-applogo" src="logo.svg" alt="" width="24" height="24"><span class="brand">Code</span> Formatter</h1>
   <div class="controls">
     <button class="primary" id="btnFormat">Format</button>
     <button id="btnMinify">Minify</button>
@@ -221,39 +227,7 @@
   </section>
 </main>
 
-<footer>
-  <div class="foot-actions">
-    <button id="btnLike" class="foot-btn like" aria-pressed="false" title="Like this tool">
-      <svg viewBox="0 0 24 24" class="heart"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.2 3 4.5 6.6 4.5c2.1 0 3.5 1.1 4.4 2.5.9-1.4 2.3-2.5 4.4-2.5 3.6 0 5.7 3.7 4.2 7.2C19.5 16.4 12 21 12 21z"/></svg>
-      <span class="like-text">Like</span>
-    </button>
-    <button id="btnFeedback" class="foot-btn" title="Send feedback">
-      <svg viewBox="0 0 24 24" class="fb-ic"><path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-4.3 3.4A.5.5 0 0 1 4 20V5a1 1 0 0 1 0-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h8M8 12.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      Feedback
-    </button>
-  </div>
-  <span class="copy">© <span id="year">2026</span> · Sir Troy. All rights reserved.</span>
-</footer>
 
-<div class="modal-back" id="fbModal" hidden>
-  <form class="modal" id="fbForm" novalidate>
-    <div class="modal-head">
-      <h2>Send feedback</h2>
-      <button type="button" class="x" id="fbClose" aria-label="Close">✕</button>
-    </div>
-    <div class="modal-body" id="fbBody">
-      <label>Name <input id="fbName" name="name" maxlength="100" autocomplete="name" required></label>
-      <label>Email <input id="fbEmail" name="email" type="email" maxlength="200" autocomplete="email" required></label>
-      <label>Comment <textarea id="fbComment" name="comment" maxlength="5000" rows="5" required placeholder="What do you like? What should be improved?"></textarea>
-        <span class="count" id="fbCount">0 / 5000</span></label>
-      <div class="fb-error" id="fbError" role="alert"></div>
-    </div>
-    <div class="modal-foot">
-      <button type="button" id="fbCancel">Cancel</button>
-      <button type="submit" class="primary" id="fbSend">Send</button>
-    </div>
-  </form>
-</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -837,8 +811,9 @@
     const L = LANGS[lang];
     const sel = langSel.value;
     const what = lang ? L.label : (sel === 'auto' ? 'code' : LANGS[sel].label);
-    $('title').innerHTML = `<span class="brand">my</span> ${esc(what)} formatter`;
-    document.title = `my ${what} formatter`;
+    const W = what === 'code' ? 'Code' : what;
+    $('title').innerHTML = `<img class="ui-applogo" src="logo.svg" alt="" width="24" height="24"><span class="brand">${esc(W)}</span> Formatter`;
+    document.title = what === 'code' ? 'Code Formatter' : `${what} Formatter · Code Formatter`;
     $('inLang').textContent = lang ? (detected ? `${L.label} · auto-detected` : L.label) : '';
     const isJson = lang === 'json' || (!lang && sel === 'json');
     $('sortWrap').style.display = isJson ? '' : 'none';
@@ -1264,82 +1239,16 @@ Tickets   closed this week:
   };
 
 
-  // ---------- Like (simple toggle, remembered in this browser) ----------
-  const likeBtn = $('btnLike');
-  const setLike = (on) => { likeBtn.setAttribute('aria-pressed', String(on)); likeBtn.querySelector('.like-text').textContent = on ? 'Liked' : 'Like'; };
-  try { setLike(localStorage.getItem('fmt-liked') === '1'); } catch {}
-  likeBtn.onclick = () => {
-    const on = likeBtn.getAttribute('aria-pressed') !== 'true';
-    setLike(on);
-    likeBtn.classList.remove('pop'); void likeBtn.offsetWidth; likeBtn.classList.add('pop');
-    try { localStorage.setItem('fmt-liked', on ? '1' : '0'); } catch {}
-    if (on) toast('Thanks for the like! ♥');
-  };
-
-  // ---------- Feedback form (saved by server.js into feedback.txt) ----------
-  const fb = { modal: $('fbModal'), form: $('fbForm'), name: $('fbName'), email: $('fbEmail'), comment: $('fbComment'),
-               err: $('fbError'), send: $('fbSend'), body: $('fbBody'), count: $('fbCount') };
-  const fbBodyHtml = fb.body.innerHTML;
-  function openFeedback() {
-    fb.modal.hidden = false;
-    if (!fb.body.querySelector('#fbName')) resetFeedback();
-    setTimeout(() => (fb.name.value ? fb.comment : fb.name).focus(), 30);
-  }
-  function closeFeedback() { fb.modal.hidden = true; }
-  function resetFeedback() {
-    fb.body.innerHTML = fbBodyHtml;
-    Object.assign(fb, { name: $('fbName'), email: $('fbEmail'), comment: $('fbComment'), err: $('fbError'), count: $('fbCount') });
-    fb.send.hidden = false; fb.send.disabled = false; fb.send.textContent = 'Send'; $('fbCancel').textContent = 'Cancel';
-    wireCount();
-  }
-  function wireCount() {
-    fb.comment.oninput = () => { fb.count.textContent = `${fb.comment.value.length} / 5000`; fb.comment.classList.remove('invalid'); fb.err.textContent = ''; };
-    fb.name.oninput = fb.email.oninput = (e) => { e.target.classList.remove('invalid'); fb.err.textContent = ''; };
-  }
-  wireCount();
-  $('btnFeedback').onclick = openFeedback;
-  $('fbClose').onclick = closeFeedback;
-  $('fbCancel').onclick = closeFeedback;
-  fb.modal.addEventListener('mousedown', (e) => { if (e.target === fb.modal) closeFeedback(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !fb.modal.hidden) closeFeedback(); });
-
-  fb.form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = fb.name.value.trim(), email = fb.email.value.trim(), comment = fb.comment.value.trim();
-    [fb.name, fb.email, fb.comment].forEach((el) => el.classList.remove('invalid'));
-    let bad = null;
-    if (!name) bad = [fb.name, 'Please enter your name.'];
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) bad = [fb.email, 'Please enter a valid email.'];
-    else if (!comment) bad = [fb.comment, 'Please write a comment.'];
-    if (bad) { bad[0].classList.add('invalid'); bad[0].focus(); fb.err.textContent = bad[1]; return; }
-
-    fb.err.textContent = ''; fb.send.disabled = true; fb.send.textContent = 'Sending…';
-    try {
-      const res = await fetch('api/feedback', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, comment }),
-      });
-      let data = null; try { data = await res.json(); } catch {}
-      if (!res.ok || !data || !data.ok) {
-        const e2 = new Error((data && data.error) || (res.status === 404 || res.status === 405 ? 'server' : `HTTP ${res.status}`));
-        e2.noServer = !data; throw e2;
-      }
-      fb.body.innerHTML = `<div class="fb-done"><div class="big">✓</div><div><b>Thank you, ${esc(name)}!</b></div><div class="detail">Your feedback was sent.</div></div>`;
-      fb.send.hidden = true; $('fbCancel').textContent = 'Close';
-      addLog('ok', 'Feedback sent', `<div class="detail">Thanks, ${esc(name)}!</div>`);
-      setTimeout(() => { if (!fb.modal.hidden && fb.send.hidden) closeFeedback(); }, 2500);
-      setTimeout(resetFeedback, 2700);
-    } catch (err) {
-      fb.send.disabled = false; fb.send.textContent = 'Send';
-      fb.err.textContent = err.noServer || err instanceof TypeError
-        ? 'Feedback can\'t be saved here — the feedback server isn\'t running. (Run "node server.js" to enable it.)'
-        : err.message;
-      addLog('err', 'Feedback not sent', `<div class="detail">${esc(fb.err.textContent)}</div>`);
-    }
-  });
-
-  $('year').textContent = new Date().getFullYear();
   window.__parse = parse; // for testing
 })();
 </script>
+<footer class="ui-foot">
+  <div class="ui-foot-in">
+    <a class="ui-foot-brand" href="https://useful-indeed.com" title="More small, free tools on useful-indeed"><img src="useful-indeed/logo.svg" alt="useful-indeed logo" width="22" height="22"><span>© <span data-ui-year>2026</span> <b>useful-indeed</b></span></a>
+    <nav class="ui-foot-nav" aria-label="Site"><a href="about.html">About</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="contact.html">Contact</a></nav>
+    <button type="button" class="ui-foot-ver" data-ui-ver>v1.0 · Version log</button>
+  </div>
+</footer>
+<script src="useful-indeed/badge.js" defer></script>
 </body>
 </html>
