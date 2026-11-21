@@ -3,7 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Code Formatter</title>
+<title>Code Formatter – Format, Minify &amp; Validate 46 Languages</title>
+<meta name="description" content="Free online code formatter. Beautify, minify and validate JSON, SQL, HTML, CSS, JavaScript, Go and 40 more languages, with exact error positions. Runs in your browser, so your code stays private.">
+<meta property="og:title" content="Code Formatter – Format, Minify &amp; Validate 46 Languages">
+<meta property="og:description" content="Free online code formatter. Beautify, minify and validate JSON, SQL, HTML, CSS, JavaScript, Go and 40 more languages, with exact error positions. Runs in your browser, so your code stays private.">
+<meta property="og:url" content="https://codeformatter.useful-indeed.com/">
+<meta property="og:type" content="website">
 <style>
   :root {
     --bg: #f6f7f9; --panel: #ffffff; --border: #e2e5ea; --text: #1d2430; --muted: #6b7380;
@@ -813,7 +818,7 @@
     const what = lang ? L.label : (sel === 'auto' ? 'code' : LANGS[sel].label);
     const W = what === 'code' ? 'Code' : what;
     $('title').innerHTML = `<img class="ui-applogo" src="logo.svg" alt="" width="24" height="24"><span class="brand">${esc(W)}</span> Formatter`;
-    document.title = what === 'code' ? 'Code Formatter' : `${what} Formatter · Code Formatter`;
+    document.title = what === 'code' ? 'Code Formatter – Format, Minify & Validate 46 Languages' : `${what} Formatter · Code Formatter`;
     $('inLang').textContent = lang ? (detected ? `${L.label} · auto-detected` : L.label) : '';
     const isJson = lang === 'json' || (!lang && sel === 'json');
     $('sortWrap').style.display = isJson ? '' : 'none';
