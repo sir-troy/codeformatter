@@ -179,7 +179,30 @@
 <link rel="canonical" href="https://codeformatter.useful-indeed.com/">
 <link rel="icon" type="image/svg+xml" href="logo.svg">
 <link rel="apple-touch-icon" href="logo.svg">
-<style id="useful-indeed-mobile">#title{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}#title .ui-applogo{width:24px;height:24px;border-radius:6px;display:block}</style>
+<style id="useful-indeed-mobile">#title{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}#title .ui-applogo{width:24px;height:24px;border-radius:6px;display:block}
+  /* guide below the editor */
+  body { height: auto; min-height: 100%; }
+  main { flex: none; height: calc(100vh - var(--hdr, 58px)); min-height: 560px; }
+  .guide { max-width: 900px; margin: 0 auto; padding: 36px 20px 70px; font-size: 15.5px; line-height: 1.65; }
+  .guide h2 { font-size: 26px; letter-spacing: -0.02em; margin: 0 0 10px; }
+  .guide h3 { font-size: 18px; margin: 32px 0 10px; }
+  .guide p, .guide li { color: var(--muted); }
+  .guide b { color: var(--text); font-weight: 600; }
+  .guide ol, .guide ul { padding-left: 22px; display: grid; gap: 6px; margin: 0; }
+  .guide .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .guide .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .guide .card b { display: block; margin-bottom: 4px; }
+  .guide .card span { color: var(--muted); font-size: 14.5px; }
+  .guide .langs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .guide .langs span { font-size: 12.5px; border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; color: var(--text); background: var(--panel); }
+  .guide .grp { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 14px 0 0; }
+  .guide details { border-top: 1px solid var(--border); padding: 12px 0; }
+  .guide summary { cursor: pointer; font-weight: 600; color: var(--text); }
+  .guide details p { margin: 6px 0 0; }
+  .more-link { display: block; text-align: center; font-size: 12.5px; color: var(--muted); text-decoration: none; padding: 0 0 10px; }
+  .more-link:hover { color: var(--accent); }
+  @media (max-width: 780px) { main { height: auto; min-height: 0; } }
+</style>
 </head>
 <body>
 <header>
@@ -231,6 +254,44 @@
     <div class="log-list" id="logList"><div class="log-empty">No logs yet — pick a language (or Auto-detect) and paste on the left.</div></div>
   </section>
 </main>
+<a class="more-link" href="#guide">How it works ↓</a>
+
+<section class="guide" id="guide">
+  <h2>Free online code formatter</h2>
+  <p>Code Formatter cleans up messy code in one click. Paste JSON, SQL, HTML, CSS, JavaScript, Python, Go or any of 46 languages and dialects, and get neatly indented, readable code back. It can also minify code and check it for errors, showing the exact line and column of each problem. Your code is formatted inside your browser, not on a server.</p>
+
+  <h3>How to use it</h3>
+  <ol>
+    <li><b>Paste your code</b> into the Input box, or click <b>Open file</b>. Click <b>Sample</b> to try it with example code.</li>
+    <li><b>Pick the language</b>, or leave it on <b>Auto-detect</b> and it will guess for you.</li>
+    <li>Choose <b>Format</b> to make it readable, or <b>Minify</b> to make it as small as possible. Pick 2 spaces, 4 spaces or tabs.</li>
+    <li><b>Copy</b> the result, or click <b>← Use as input</b> to keep working on it. Any problems are listed in <b>Logs</b> with their line and column.</li>
+  </ol>
+
+  <h3>What it can do</h3>
+  <div class="cards">
+    <div class="card"><b>Format (beautify)</b><span>Consistent indentation, line breaks and spacing, using the same engines many developers use, like Prettier and sql-formatter.</span></div>
+    <div class="card"><b>Minify</b><span>Strip spaces and line breaks to make JSON, CSS, HTML and other code as compact as possible.</span></div>
+    <div class="card"><b>Validate</b><span>Find errors with their exact position, so you know which line to fix.</span></div>
+    <div class="card"><b>JSON extras</b><span>Sort keys alphabetically, and auto-fix common mistakes such as trailing commas or single quotes.</span></div>
+  </div>
+
+  <h3>Supported languages</h3>
+  <p class="grp">Data &amp; config</p><div class="langs"><span>JSON</span><span>JSON5</span><span>YAML</span><span>TOML</span><span>XML</span><span>Protocol Buffers</span></div>
+  <p class="grp">Web</p><div class="langs"><span>HTML</span><span>Vue</span><span>Angular template</span><span>Handlebars</span><span>CSS</span><span>SCSS</span><span>LESS</span><span>JavaScript / JSX</span><span>TypeScript / TSX</span><span>Flow</span><span>GraphQL</span><span>Markdown</span><span>MDX</span></div>
+  <p class="grp">Programming</p><div class="langs"><span>Python</span><span>Go</span><span>Java</span><span>C</span><span>C++</span><span>C#</span><span>Objective-C</span><span>PHP</span><span>Dart</span><span>Lua</span><span>Shell / Bash</span><span>Zig</span></div>
+  <p class="grp">SQL dialects</p><div class="langs"><span>Standard SQL</span><span>MySQL</span><span>MariaDB</span><span>PostgreSQL</span><span>SQL Server (T-SQL)</span><span>Oracle PL/SQL</span><span>SQLite</span><span>BigQuery</span><span>Snowflake</span><span>Redshift</span><span>Spark SQL</span><span>Trino / Presto</span><span>Hive</span><span>IBM Db2</span></div>
+
+  <h3>Why format your code?</h3>
+  <p>Well-formatted code is easier to read, review and debug. A single long line of JSON from an API is nearly impossible to scan, but formatted it shows every field at a glance. Formatting SQL makes joins and conditions easy to follow, and consistent indentation keeps code reviews focused on what the code does, not how it's spaced. Minifying does the opposite: it makes files smaller for production.</p>
+
+  <h3>Questions</h3>
+  <details><summary>Is my code uploaded anywhere?</summary><p>No. Formatting happens in your browser. The page downloads the formatting engines (for example Prettier) from a public code library the first time you use a language, but your code itself is never sent.</p></details>
+  <details><summary>Why does it say my JSON is invalid?</summary><p>Common causes are a missing comma, a trailing comma after the last item, single quotes instead of double quotes, or comments. The Logs panel shows the line and column. Turn on <b>Auto-fix errors</b> to repair the most common ones automatically.</p></details>
+  <details><summary>What's the difference between Format and Minify?</summary><p>Format adds indentation and line breaks so people can read the code. Minify removes them so the file is as small as possible, which is useful for production websites and APIs.</p></details>
+  <details><summary>Can I format very large files?</summary><p>Yes, within what your device's memory allows. Files of a few megabytes are usually fine on a laptop.</p></details>
+  <details><summary>Does it work on my phone?</summary><p>Yes. On small screens the input, output and logs stack on top of each other.</p></details>
+</section>
 
 
 <div class="toast" id="toast"></div>
@@ -1255,5 +1316,7 @@ Tickets   closed this week:
   </div>
 </footer>
 <script src="useful-indeed/badge.js" defer></script>
+<script>(function(){var h=document.querySelector('header');function f(){document.documentElement.style.setProperty('--hdr',(h?h.offsetHeight:58)+'px')}f();addEventListener('resize',f);
+document.querySelectorAll('a.more-link').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();document.getElementById('guide').scrollIntoView({behavior:'smooth'})})})})();</script>
 </body>
 </html>
