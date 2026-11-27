@@ -177,6 +177,8 @@
   .switch input:checked + .track .sun { opacity: 0; transform: rotate(60deg) scale(.6); }
   .switch input:checked + .track .moon { opacity: 1; transform: none; color: #ffd76a; }
   .switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #input:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .modal-body input:focus-visible, .modal-body textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   @media (max-width: 780px) {
     main { grid-template-columns: 1fr; grid-template-rows: 320px 320px 220px; } footer { flex-wrap: wrap; } body { height: auto; } html, body { height: auto; }
   }
@@ -247,7 +249,7 @@
 <main>
   <section class="pane">
     <div class="pane-head">Input <span class="in-lang" id="inLang"></span><div class="spacer"></div><button id="btnClear">Clear</button></div>
-    <textarea id="input" spellcheck="false" placeholder="Paste your code here… (or drop a file)"></textarea>
+    <textarea id="input" spellcheck="false" aria-label="Code input. Tab adds spaces; press Esc then Tab to move out of the box." placeholder="Paste your code here… (or drop a file)"></textarea>
   </section>
   <section class="pane">
     <div class="pane-head">Output <div class="spacer"></div><button id="btnUseOutput" title="Move output to the input side">← Use as input</button><button id="btnCopy">Copy</button></div>
@@ -1287,7 +1289,11 @@ Tickets   closed this week:
     if (f) { e.preventDefault(); readFile(f); }
   });
   // Tab key inserts indentation in the input
+  let tabOut = false; // Esc, then Tab, moves focus out of the box (no keyboard trap)
   input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { tabOut = true; return; }
+    if (e.key === 'Tab' && tabOut) { tabOut = false; return; }
+    if (e.key !== 'Shift') tabOut = false;
     if (e.key === 'Tab' && !e.shiftKey) {
       e.preventDefault();
       const s = input.selectionStart, en = input.selectionEnd;
